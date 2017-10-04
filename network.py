@@ -1,7 +1,9 @@
 #!/bin/python
+import sys
 import numpy as np
 import itertools
-from network_utilities import * 
+sys.path.append("../")
+from Inquiry.utilities import * 
 np.random.seed(1)
 
 class Layer():
@@ -150,7 +152,7 @@ class NeuralNetwork():
     def adjust_weights(self, error, **kwargs):
         """ Adjusting of the Layer's weights """
 
-        if len(self.layers[:-1]) > 2:  
+        if len(self.layers) > 2:  
             reversed_layers = [layer for layer in reversed(self.layers[:-1])]
             next_layer = self.layers[-1]
             next_layer.adjust_weights(error)
@@ -163,16 +165,13 @@ class NeuralNetwork():
             self.layers[0].adjust_weights(error=error, next_layer=next_layer)
             
         else:
-            self.layers[-2].adjust_weights(error=error)
-            self.layers[-3].adjust_weights(error=error, next_layer=self.layers[1])
+            self.layers[-1].adjust_weights(error=error)
+            self.layers[-2].adjust_weights(error=error, next_layer=self.layers[1])
 
-    def train(self, iters, training_set_inputs, training_set_outputs, error_vector=None, yield_error=None):
+    def train(self, iters, training_set_inputs, training_set_outputs):
         """ Train the network for *iters* epochs. 
            *yield_error* turns this function into a generator which will yield the error values for each training iteration""" 
         for i in range(iters):
             prediction = self.predict(training_set_inputs) 
             error = training_set_outputs - prediction 
             self.adjust_weights(error)
-
-            if yield_error:   # Sends the error to some generator
-                yield error
