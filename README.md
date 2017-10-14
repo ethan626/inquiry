@@ -19,4 +19,6 @@ n.predict(inputs)
 
 n.train(iterations, training_inputs, training_outputs) # This trains the neural network n using offline learning
 
+Visualization of the classification example.
+![alt text](https://github.com/ethan626/Inquiry/blob/master/examples/classification.png)
 
