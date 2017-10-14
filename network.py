@@ -69,7 +69,7 @@ class OutputLayer(Layer):
         self.neuron_outputs = None 
         self.neuron_inputs = None 
         self.learning_rate = learning_rate
-        self.weights = None     # unused
+        self.weights = []     # unused
         self.tanh = tanh
 
     def predict(self, x):
@@ -117,23 +117,27 @@ class NeuralNetwork():
 
     def __init__(self):
         """ self.layers = a list of all layers in the network. Currently the hidden layers are square matricies of the same size as the input shape """
-        self.layers = []
+        self.layers = np.array([])
 
     def add_input_layer(self, input_shape, output_shape, learning_rate=1):
         """ Add an input layer to the network """
-        self.layers.append(InputLayer(input_shape, output_shape, learning_rate=learning_rate))
+        self.layers = np.append(self.layers, InputLayer(input_shape, output_shape, learning_rate=learning_rate))
 
     def add_output_layer(self, learning_rate=1, tanh=False):
         """ Add an output neuron to the network """
-        self.layers.append(OutputLayer(learning_rate=learning_rate, tanh=tanh))
+        self.layers = np.append(self.layers, OutputLayer(learning_rate=learning_rate, tanh=tanh))
 
     def add_layer(self, input_shape, output_shape, learning_rate=1, tanh=False):
         """ Add a layer to the network """
-        self.layers.append(Layer(input_shape, output_shape, learning_rate=learning_rate, tanh=tanh))
+        self.layers = np.append(self.layers, Layer(input_shape, output_shape, learning_rate=learning_rate, tanh=tanh))
 
     def weights(self):
         """ Returns a numpy array of the weights of the network, not counting the input layer with the weights of the layers closest to the input layers coming first """
         return np.array([layer.weights for layer in self.layers])
+
+    def num_layers(self):
+        """ Returns the number of layers in the network """
+        return len(self.layers)
 
     def deltas(self):
         """ Returns a matrix of the deltas of each layer """
@@ -175,3 +179,22 @@ class NeuralNetwork():
             prediction = self.predict(training_set_inputs) 
             error = training_set_outputs - prediction 
             self.adjust_weights(error)
+
+    def _encode(self, data):
+        """ Encodes numpy arrays so they can be saved with json """
+
+        if isinstance(data, np.ndarray):
+            return data.tolist()
+
+        if isinstance(data, np.int64):
+            return int(data)
+
+        if isinstance(data, Layer):
+            return {attribute: self._encode(getattr(data, attribute)) for attribute in data.__dict__}
+
+    def save(self, file_name):  # Needs to call _encode on each attribute of the attributes 
+        """ Saves the network to a file."""
+        save_data = {attribute: self._encode(getattr(self, attribute)) for attribute in self.__dict__}
+        return save_data
+        with open(file_name, 'a+') as f:
+            f.write(json.dumps(save_data))

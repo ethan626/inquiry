@@ -1,6 +1,6 @@
 # Inquiry
 
-Inquiry! A Numpy based neural network library which currently supports feed forward neural networks. Inquiry was initially created as a mathematical exploration of neural networks. 
+Inquiry! A Numpy based neural network library which currently supports feed forward neural networks. Inquiry was initially created as an exploration of neural networks. 
 
 Future plans include Cythonizing and adding support for recurrent layers.
 
