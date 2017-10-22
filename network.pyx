@@ -1,6 +1,9 @@
 #!/bin/python
 import sys
 import numpy as np
+cimport numpy as np
+cimport numpy as np
+from libcpp cimport bool 
 import itertools
 sys.path.append("../")
 from Inquiry.utilities import * 
@@ -9,7 +12,7 @@ np.random.seed(1)
 class Layer():
     """ Hidden Layer of a Feed Forward Neural Network """
 
-    def __init__(self, in_size, out_size, learning_rate=1, tanh=False):
+    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1, tanh=False):
         """ Constructor Method 
         
            This layer-> 
@@ -17,47 +20,53 @@ class Layer():
                                                               v
         
 
-        """ 
-        self.weights = 2 * np.random.random((in_size, out_size)) - 1 
+        """
+
+        cdef double[:,:] weights = 2 * np.random.random((in_size, out_size)) - 1 
+        cdef double[:,:] deltas 
+        cdef double[:,:] neuron_outputs
+        cdef double[:,:] neuron_inputs
+        
+        self.weights = weights 
         self.input_size = in_size
         self.output_size = out_size
-        self.deltas = None 
-        self.neuron_outputs = None 
-        self.neuron_inputs = None
+        self.deltas = deltas 
+        self.neuron_outputs = neuron_outputs 
+        self.neuron_inputs = neuron_inputs 
         self.learning_rate = learning_rate
-        self.tanh = False
+        self.tanh = tanh  
 
     def get_weights(self):
         return self.weights
     
-    def activation(self, x):
+    def activation(self, np.ndarray x):
         """ Sigmoid activation function """
         if self.tanh:
             return np.tanh(x)
         else:
             return 1/(1+np.exp(-x))
 
-    def derivative(self, x):
+    def derivative(self, np.ndarray x):
         """ Sigmoid derivative """
         if self.tanh:
             return 1-np.tanh(x) ** 2
         return x * (1-x)
     
-    def predict(self, x):
+    def predict(self, np.ndarray x):
         """ Layers prediction for input *x* """
         self.neuron_inputs = np.array(x)
         self.neuron_outputs = self.activation(x)
         return np.dot(self.activation(x), self.weights) 
 
     def get_deltas(self, next_layer=None, prev_layer=None, **kwargs): 
-        """ Calcuates the deltas for a layer for an entire epoch """ 
+        """ Calcuates the deltas for a layer for an entire epoch """
         self.deltas = np.dot(next_layer.deltas, self.weights.T) * self.derivative(self.neuron_outputs) 
         return self.deltas
         
     def adjust_weights(self,  prev_layer=None, next_layer=None, *args, **kwargs):
         """ Adjusts the weights between the layer and the previous layer """
-        deltas = next_layer.deltas
-        adjustments = self.learning_rate * np.dot(self.neuron_outputs.T, deltas)
+        cdef double[:,:] deltas = next_layer.deltas
+        cdef double[:,:] adjustments = self.learning_rate * np.dot(self.neuron_outputs.T, deltas)
         self.weights += adjustments
 
 class OutputLayer(Layer):
@@ -65,6 +74,11 @@ class OutputLayer(Layer):
 
     def __init__(self, learning_rate=1, tanh=False):
         """ """
+        
+        cdef double[:,:] deltas 
+        cdef double[:,:] neuron_outputs
+        cdef double[:,:] neuron_inputs
+        
         self.deltas = None 
         self.neuron_outputs = None 
         self.neuron_inputs = None 
@@ -72,41 +86,45 @@ class OutputLayer(Layer):
         self.weights = []     # unused
         self.tanh = tanh
 
-    def predict(self, x):
+    def predict(self, np.ndarray x):
         """ """
         self.neuron_inputs = np.array(x)
         self.neuron_outputs = self.activation(x)
         return self.neuron_outputs
 
-    def get_deltas(self, error, *args, **kwargs):
+    def get_deltas(self, np.ndarray error, *args, **kwargs):
         """ """
-        derivs = self.derivative(self.neuron_outputs)
-        self.deltas = error * derivs
+        self.deltas = error * self.derivative(self.neuron_outputs)
         return self.deltas
 
-    def adjust_weights(self, error, *args, **kwargs):
+    def adjust_weights(self,  error, *args, **kwargs):
         """ """
         self.get_deltas(error)
     
 class InputLayer(Layer):
     """ Input Layer of the network """
 
-    def __init__(self, in_size, out_size, learning_rate=1):
+    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1):
         """  Init method. Weights are initialized to the identity matrix as the raw data is passed forward"""
-        self.weights = 2*np.random.random((in_size, out_size)) - 1 
+        cdef double[:,:] weights = 2 * np.random.random((in_size, out_size)) - 1 
+        cdef double[:,:] deltas 
+        cdef double[:,:] neuron_outputs
+        cdef double[:,:] neuron_inputs
+
+        self.weights = weights 
         self.input_size = in_size
-        self.deltas = None 
-        self.neuron_outputs = None 
-        self.neuron_inputs = None 
+        self.deltas = deltas 
+        self.neuron_outputs = neuron_outputs
+        self.neuron_inputs = neuron_inputs
         self.learning_rate = learning_rate 
         
-    def predict(self, x):
+    def predict(self, np.ndarray x):
         """ Input Layer predict. Passes the raw data forward  """
         self.neuron_inputs = np.array(x)
         self.neuron_outputs = np.array(x)
         return np.dot(x, self.weights)
     
-    def adjust_weights(self, error, prev_layer=None, next_layer=None, **kwargs): 
+    def adjust_weights(self, np.ndarray error, prev_layer=None, next_layer=None, **kwargs): 
         """ Adjusts the weights between the layer and the previous layer """
         deltas = next_layer.deltas
         adjustments = self.learning_rate * np.dot(self.neuron_inputs.T, deltas)
@@ -172,15 +190,18 @@ class NeuralNetwork():
             self.layers[-1].adjust_weights(error=error)
             self.layers[-2].adjust_weights(error=error, next_layer=self.layers[1])
 
-    def train(self, iters, training_set_inputs, training_set_outputs):
+    def train(self, unsigned int iters, np.ndarray training_set_inputs, np.ndarray training_set_outputs):
         """ Train the network for *iters* epochs. 
-           *yield_error* turns this function into a generator which will yield the error values for each training iteration""" 
+           *yield_error* turns this function into a generator which will yield the error values for each training iteration"""
+        cdef np.ndarray error 
+        cdef np.ndarray prediction
+        
         for i in range(iters):
             prediction = self.predict(training_set_inputs) 
             error = training_set_outputs - prediction 
             self.adjust_weights(error)
 
-    def _encode(self, data):    # Look at save/load from numpy  
+    def _encode(self, data):
         """ Encodes numpy arrays so they can be saved with json """
 
         if isinstance(data, np.ndarray):
