@@ -2,8 +2,6 @@
 import sys
 import numpy as np
 cimport numpy as np
-cimport numpy as np
-from libcpp cimport bool 
 import itertools
 sys.path.append("../")
 from Inquiry.utilities import * 
@@ -171,7 +169,7 @@ class NeuralNetwork():
             x = layer.predict(x)
         return x
 
-    def adjust_weights(self, error, **kwargs):
+    def adjust_weights(self, np.ndarray error, **kwargs):
         """ Adjusting of the Layer's weights """
 
         if len(self.layers) > 2:  

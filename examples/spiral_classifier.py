@@ -1,0 +1,68 @@
+#!/bin/python
+from Inquiry.network import *
+from Inquiry.utilities import *
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import axes3d
+
+""" Here we impliment an MLP classifier using Inquiry. 
+    We create the spiral data set borrowed from http://cs231n.github.io/neural-networks-case-study/#grad and succesfully classify it. """ 
+
+number_of_classes = 3           # Global parameters
+points_per_class = 100
+dimensions = 2
+learning_rate = .01
+training_iterations = 10000
+
+ins = np.zeros((points_per_class*number_of_classes, dimensions))        # Inputs
+outs = np.zeros(points_per_class*number_of_classes, dtype='uint8')      # Target Outputs
+
+for j in range(number_of_classes):              # Filling the empty data set arrays
+    ix = range(points_per_class*j, points_per_class*(j+1))
+    r = np.linspace(0.01, 1, points_per_class) # Do not start at 0 so when we multiply by "r" below the point(0,0) is not in all three classes  
+    t = np.linspace(j*4, (j+1)*4, points_per_class) + np.random.randn(points_per_class) * .2
+    ins[ix] = np.c_[r*np.sin(t), r*np.cos(t)]
+    outs[ix] = j  
+
+outs = one_hot_encode(outs)     # In this network setup our data is one hot encoded. So a point of class 2 is represented as (0,0,1)
+
+""" Here we create a network with three hidden layers with sixty neurons per hidden layer """
+
+n = NeuralNetwork()
+n.add_input_layer(ins.shape[1], 60, learning_rate=learning_rate)
+n.add_layer(60, 60, learning_rate=learning_rate)
+n.add_layer(60, outs.shape[1], learning_rate=learning_rate)
+n.add_output_layer(learning_rate=learning_rate)
+
+""" Here we train the network on all of our data. 
+    This example can be adjusted if you wish to save some for a validation set """
+
+print('Training...')
+n.train(training_iterations, ins, outs)
+
+""" Here we make a prediction with the Network. 
+    The network output, called results, is one hot encoded so we decode the network output using Inquirie's function one_hot_decode """
+
+results = n.predict(ins)  
+results = round_to_int(results)
+print("The number of falsely classified points is ", np.sum(np.abs(results - outs))) 
+results = one_hot_decode(results)
+
+""" Here we aggregate the network predictions into types and then plot the predictions and color code the types """
+
+type_zero = np.array([(i,*j) for i,j in zip(results, ins) if i == 0])
+type_one = np.array([(i,*j) for i,j in zip(results, ins) if i == 1])
+type_two = np.array([(i,*j) for i,j in zip(results, ins) if i == 2])
+
+plt.figure()
+plt.title("Network Spiral Predictions")
+plt.legend(["Predicted as Zero", "Predicted as One", "Predicted as Two"])
+plt.xlabel("x")
+plt.ylabel("y")
+
+plt.scatter(type_zero[:,1], type_zero[:,2], color='red' )
+plt.scatter(type_one[:,1], type_one[:,2], color='blue' )
+plt.scatter(type_two[:,1], type_two[:,2], color='purple' )
+
+plt.show()
+plt.close()
