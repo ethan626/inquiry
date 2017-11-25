@@ -10,7 +10,7 @@ np.random.seed(1)
 class Layer():
     """ Hidden Layer of a Feed Forward Neural Network """
 
-    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1, tanh=False):
+    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1, tanh=False, bias=0):
         """ Constructor Method 
         
            This layer-> 
@@ -21,19 +21,20 @@ class Layer():
         """
 
         cdef double[:,:] weights = 2 * np.random.random((in_size, out_size)) - 1 
-        cdef double[:,:] deltas 
-        cdef double[:,:] neuron_outputs
-        cdef double[:,:] neuron_inputs
-        
+        # cdef double[:,:] deltas #= np.zeros((in_size, out_size))  
+        # cdef double[:,:] neuron_outputs #= np.zeros((1, out_size))
+        # cdef double[:,:] neuron_inputs #= np.zeros((1, in_size))
+
         self.weights = weights 
         self.input_size = in_size
         self.output_size = out_size
-        self.deltas = deltas 
-        self.neuron_outputs = neuron_outputs 
-        self.neuron_inputs = neuron_inputs 
+        self.deltas = None 
+        self.neuron_outputs = None
+        self.neuron_inputs = None
         self.learning_rate = learning_rate
         self.tanh = tanh  
-
+        self.bias = bias
+        
     def get_weights(self):
         return self.weights
     
@@ -54,7 +55,7 @@ class Layer():
         """ Layers prediction for input *x* """
         self.neuron_inputs = np.array(x)
         self.neuron_outputs = self.activation(x)
-        return np.dot(self.activation(x), self.weights) 
+        return np.dot(self.activation(x), self.weights) + self.bias 
 
     def get_deltas(self, next_layer=None, prev_layer=None, **kwargs): 
         """ Calcuates the deltas for a layer for an entire epoch """
@@ -65,29 +66,30 @@ class Layer():
         """ Adjusts the weights between the layer and the previous layer """
         cdef double[:,:] deltas = next_layer.deltas
         cdef double[:,:] adjustments = self.learning_rate * np.dot(self.neuron_outputs.T, deltas)
-        self.weights += adjustments
+        self.weights += np.array(adjustments)
 
 class OutputLayer(Layer):
     """ Output Layer """
 
-    def __init__(self, learning_rate=1, tanh=False):
+    def __init__(self, learning_rate=1, tanh=False, bias=0):
         """ """
         
-        cdef double[:,:] deltas 
-        cdef double[:,:] neuron_outputs
-        cdef double[:,:] neuron_inputs
+        # cdef double[:,:] deltas 
+        # cdef double[:,:] neuron_outputs
+        # cdef double[:,:] neuron_inputs
         
         self.deltas = None 
         self.neuron_outputs = None 
         self.neuron_inputs = None 
         self.learning_rate = learning_rate
-        self.weights = []     # unused
+        # self.weights = []       # Ununsed  
         self.tanh = tanh
+        self.bias = bias
 
     def predict(self, np.ndarray x):
         """ """
         self.neuron_inputs = np.array(x)
-        self.neuron_outputs = self.activation(x)
+        self.neuron_outputs = self.activation(x) + self.bias
         return self.neuron_outputs
 
     def get_deltas(self, np.ndarray error, *args, **kwargs):
@@ -102,31 +104,32 @@ class OutputLayer(Layer):
 class InputLayer(Layer):
     """ Input Layer of the network """
 
-    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1):
+    def __init__(self, unsigned int in_size, unsigned int out_size, learning_rate=1, bias=0):
         """  Init method. Weights are initialized to the identity matrix as the raw data is passed forward"""
         cdef double[:,:] weights = 2 * np.random.random((in_size, out_size)) - 1 
-        cdef double[:,:] deltas 
-        cdef double[:,:] neuron_outputs
-        cdef double[:,:] neuron_inputs
+        # cdef double[:,:] deltas 
+        # cdef double[:,:] neuron_outputs
+        # cdef double[:,:] neuron_inputs
 
         self.weights = weights 
         self.input_size = in_size
-        self.deltas = deltas 
-        self.neuron_outputs = neuron_outputs
-        self.neuron_inputs = neuron_inputs
-        self.learning_rate = learning_rate 
+        self.deltas = None 
+        self.neuron_outputs = None 
+        self.neuron_inputs = None
+        self.learning_rate = learning_rate
+        self.bias = bias
         
     def predict(self, np.ndarray x):
         """ Input Layer predict. Passes the raw data forward  """
         self.neuron_inputs = np.array(x)
         self.neuron_outputs = np.array(x)
-        return np.dot(x, self.weights)
+        return np.dot(x, self.weights) + self.bias
     
     def adjust_weights(self, np.ndarray error, prev_layer=None, next_layer=None, **kwargs): 
         """ Adjusts the weights between the layer and the previous layer """
         deltas = next_layer.deltas
         adjustments = self.learning_rate * np.dot(self.neuron_inputs.T, deltas)
-        self.weights += adjustments 
+        self.weights += np.array(adjustments) # Adjustments is a memory view slice, need to convert to numpy array to add them 
         
 class NeuralNetwork():
     """ Feed Forward Neural Network """
@@ -135,15 +138,15 @@ class NeuralNetwork():
         """ self.layers = a list of all layers in the network. Currently the hidden layers are square matricies of the same size as the input shape """
         self.layers = np.array([])
 
-    def add_input_layer(self, input_shape, output_shape, learning_rate=1):
+    def add_input_layer(self, input_shape, output_shape, learning_rate=.003):
         """ Add an input layer to the network """
         self.layers = np.append(self.layers, InputLayer(input_shape, output_shape, learning_rate=learning_rate))
 
-    def add_output_layer(self, learning_rate=1, tanh=False):
+    def add_output_layer(self, learning_rate=.003, tanh=False):
         """ Add an output neuron to the network """
         self.layers = np.append(self.layers, OutputLayer(learning_rate=learning_rate, tanh=tanh))
 
-    def add_layer(self, input_shape, output_shape, learning_rate=1, tanh=False):
+    def add_layer(self, input_shape, output_shape, learning_rate=.003, tanh=False):
         """ Add a layer to the network """
         self.layers = np.append(self.layers, Layer(input_shape, output_shape, learning_rate=learning_rate, tanh=tanh))
 
@@ -188,32 +191,31 @@ class NeuralNetwork():
             self.layers[-1].adjust_weights(error=error)
             self.layers[-2].adjust_weights(error=error, next_layer=self.layers[1])
 
-    def train(self, unsigned int iters, np.ndarray training_set_inputs, np.ndarray training_set_outputs):
-        """ Train the network for *iters* epochs. 
-           *yield_error* turns this function into a generator which will yield the error values for each training iteration"""
+    def train(self, unsigned int epochs, np.ndarray training_set_inputs, np.ndarray training_set_outputs):
+        """ Train the network """
         cdef np.ndarray error 
         cdef np.ndarray prediction
         
-        for i in range(iters):
+        for i in range(epochs):
             prediction = self.predict(training_set_inputs) 
             error = training_set_outputs - prediction 
             self.adjust_weights(error)
 
-    def _encode(self, data):
-        """ Encodes numpy arrays so they can be saved with json """
+    # def _encode(self, data):    # Need to finish this  
+    #     """ Encodes numpy arrays so they can be saved with json """
 
-        if isinstance(data, np.ndarray):
-            return data.tolist()
+    #     if isinstance(data, np.ndarray):
+    #         return data.tolist()
 
-        if isinstance(data, np.int64):
-            return int(data)
+    #     if isinstance(data, np.int64):
+    #         return int(data)
 
-        if isinstance(data, Layer):
-            return {attribute: self._encode(getattr(data, attribute)) for attribute in data.__dict__}
+    #     if isinstance(data, Layer):
+    #         return {attribute: self._encode(getattr(data, attribute)) for attribute in data.__dict__}
 
-    def save(self, file_name):  # Needs to call _encode on each attribute of the attributes 
-        """ Saves the network to a file."""
-        save_data = {attribute: self._encode(getattr(self, attribute)) for attribute in self.__dict__}
-        return save_data
-        with open(file_name, 'a+') as f:
-            f.write(json.dumps(save_data))
+    # def save(self, file_name):  # Needs to call _encode on each attribute of the attributes 
+    #     """ Saves the network to a file."""
+    #     save_data = {attribute: self._encode(getattr(self, attribute)) for attribute in self.__dict__}
+    #     return save_data
+    #     with open(file_name, 'a+') as f:
+    #         f.write(json.dumps(save_data))

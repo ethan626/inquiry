@@ -30,11 +30,13 @@ Github: ethan626
 """
 
 if __name__ == '__main__':       
-    types = 3 
+    types = 3                   # Three classes of length 3 vectors  
     vector_size = 3
-    ins = np.array(list(itertools.permutations([i for i in range(types)], vector_size)))
-    outs = one_hot_encode(np.array([[i % types for i in range(len(ins))]]).T)
+    ins = np.array(list(itertools.permutations([i for i in range(types)], vector_size))) # Create the data set 
+    outs = one_hot_encode(np.array([[i % types for i in range(len(ins))]]).T) # One hot encode the target classes 
+    
     learning_rate = .01
+    epochs = 10000               # Number of training epochs 
 
     n = NeuralNetwork()
 
@@ -43,15 +45,13 @@ if __name__ == '__main__':
     n.add_layer(40, types, learning_rate=learning_rate)
     n.add_output_layer(learning_rate=learning_rate)
 
-    iters = 10000
-
     print('Training...')
 
-    n.train(iters, ins, outs)
+    n.train(epochs, ins, outs)  # Train the network 
 
     results = n.predict(ins)
-    results = round_to_int(results)
-    one_hot_results = one_hot_decode(results)
+    results = round_to_int(results) # Round the the probabilities to get predicted classes, these come out one-hot encoded.
+    one_hot_results = one_hot_decode(results) # Decode the prediction 
 
     """ 
     Here we plot the sum magnitude of the error during training.
