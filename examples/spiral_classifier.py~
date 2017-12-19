@@ -12,7 +12,7 @@ number_of_classes = 3           # Global parameters
 points_per_class = 100
 dimensions = 2
 learning_rate = .01
-training_iterations = 500 
+training_iterations = 10000
 
 ins = np.zeros((points_per_class*number_of_classes, dimensions))        # Inputs
 outs = np.zeros(points_per_class*number_of_classes, dtype='uint8')      # Target Outputs
@@ -37,61 +37,11 @@ n.add_output_layer(learning_rate=learning_rate)
 """ Here we train the network on all of our data. 
     This example can be adjusted if you wish to save some for a validation set """
 
-results = n.predict(ins)  
-results = round_to_int(results)
-print("The number of falsely classified points is ", np.sum(np.abs(results - outs))) 
-results = one_hot_decode(results)
-
-""" Here we aggregate the network predictions into types and then plot the predictions and color code the types """
-
-type_zero = np.array([(i,*j) for i,j in zip(results, ins) if i == 0])
-type_one = np.array([(i,*j) for i,j in zip(results, ins) if i == 1])
-type_two = np.array([(i,*j) for i,j in zip(results, ins) if i == 2])
-
-plt.figure()
-plt.title("Network Spiral Predictions Initial")
-plt.legend(["Predicted as Zero", "Predicted as One", "Predicted as Two"])
-plt.xlabel("x")
-plt.ylabel("y")
-
-if type_zero.shape[0] != 0: plt.scatter(type_zero[:,1], type_zero[:,2], color='red' )
-if type_one.shape[0] != 0: plt.scatter(type_one[:,1], type_one[:,2], color='blue' ) 
-if type_two.shape[0] != 0: plt.scatter(type_two[:,1], type_two[:,2], color='purple' )
-
-plt.show()
-plt.close()
-
 print('Training...')
+n.train(training_iterations, ins, outs)
 
-for i in range(3):
-    n.train(training_iterations, ins, outs)
-
-
-    results = n.predict(ins)  
-    results = round_to_int(results)
-    print("The number of falsely classified points is ", np.sum(np.abs(results - outs))) 
-    results = one_hot_decode(results)
-
-    """ Here we aggregate the network predictions into types and then plot the predictions and color code the types """
-
-    type_zero = np.array([(i,*j) for i,j in zip(results, ins) if i == 0])
-    type_one = np.array([(i,*j) for i,j in zip(results, ins) if i == 1])
-    type_two = np.array([(i,*j) for i,j in zip(results, ins) if i == 2])
-
-    plt.figure()
-    plt.title("Network Spiral Predictions During Training")
-    plt.legend(["Predicted as Zero", "Predicted as One", "Predicted as Two"])
-    plt.xlabel("x")
-    plt.ylabel("y")
-
-    if type_zero.shape[0] != 0: plt.scatter(type_zero[:,1], type_zero[:,2], color='red' )
-    if type_one.shape[0] != 0: plt.scatter(type_one[:,1], type_one[:,2], color='blue' ) 
-    if type_two.shape[0] != 0: plt.scatter(type_two[:,1], type_two[:,2], color='purple' )
-
-    plt.show()
-    plt.close()
 """ Here we make a prediction with the Network. 
-    The network output, called results, is one hot encoded so we decode the network output using Inquiry's function one_hot_decode """
+    The network output, called results, is one hot encoded so we decode the network output using Inquirie's function one_hot_decode """
 
 results = n.predict(ins)  
 results = round_to_int(results)

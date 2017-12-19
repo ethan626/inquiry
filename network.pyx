@@ -191,14 +191,14 @@ class NeuralNetwork():
             self.layers[-1].adjust_weights(error=error)
             self.layers[-2].adjust_weights(error=error, next_layer=self.layers[1])
 
-    def train(self, unsigned int epochs, np.ndarray training_set_inputs, np.ndarray training_set_outputs):
+    def train(self, unsigned int epochs, np.ndarray training_set_inputs, np.ndarray training_set_outputs, loss_function=lambda x,y: x - y):
         """ Train the network """
         cdef np.ndarray error 
         cdef np.ndarray prediction
-        
+
         for i in range(epochs):
             prediction = self.predict(training_set_inputs) 
-            error = training_set_outputs - prediction 
+            error = loss_function(training_set_outputs, prediction)
             self.adjust_weights(error)
 
     # def _encode(self, data):    # Need to finish this  

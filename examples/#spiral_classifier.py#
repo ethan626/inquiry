@@ -1,3 +1,4 @@
+
 #!/bin/python
 from Inquiry.network import *
 from Inquiry.utilities import *
@@ -91,7 +92,7 @@ for i in range(3):
     plt.show()
     plt.close()
 """ Here we make a prediction with the Network. 
-    The network output, called results, is one hot encoded so we decode the network output using Inquiry's function one_hot_decode """
+    The network output, called results, is one hot encoded so we decode the network output using Inquirie's function one_hot_decode """
 
 results = n.predict(ins)  
 results = round_to_int(results)
