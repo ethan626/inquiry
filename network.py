@@ -172,13 +172,20 @@ class NeuralNetwork():
             self.layers[-1].adjust_weights(error=error)
             self.layers[-2].adjust_weights(error=error, next_layer=self.layers[1])
 
-    def train(self, iters, training_set_inputs, training_set_outputs):
+    def train(self, iters, training_set_inputs, training_set_outputs, online=False):
         """ Train the network for *iters* epochs. 
-           *yield_error* turns this function into a generator which will yield the error values for each training iteration""" 
-        for i in range(iters):
-            prediction = self.predict(training_set_inputs) 
-            error = training_set_outputs - prediction 
-            self.adjust_weights(error)
+           kwargs: online - specifies online learning if True, offline if False (default) """
+        if online:
+            for i in range(iters):
+                for training_input, training_output in zip(training_set_inputs, training_set_outputs): # Assert len(inputs) == len(outputs)?
+                    prediction = self.predict(training_set_inputs)
+                    error = training_output - prediction
+                    self.adjust_weights(error)
+        else:
+            for i in range(iters):
+                prediction = self.predict(training_set_inputs) 
+                error = training_set_outputs - prediction 
+                self.adjust_weights(error)
 
     def _encode(self, data):    # Look at save/load from numpy  
         """ Encodes numpy arrays so they can be saved with json """

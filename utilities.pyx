@@ -2,8 +2,7 @@
 #cython: boundscheck=False
 import numpy as np
 cimport numpy as np
-# from Inquiry.network cimport *           
-# import itertools as it
+from inquiry.network import *           
 
 DTYPE = np.int
 ctypedef np.int_t DTYPE_t
@@ -16,24 +15,35 @@ cdef inline int int_max(int a, int b): return a if a >= b else b
 cdef inline int int_min(int a, int b): return a if a <= b else b
 
 def one_hot_encode(np.ndarray vector): 
-    """ One Hot Encoding of a whole number valued rectangular vector with entries less than 2^16.  """
+    """ One Hot Encoding of a positive whole number valued rectangular vector with entries less than 2^16.  """
 
     if vector.shape[1] != 1: 
         vector = vector.flatten()
         
-    num_classes = np.unique(vector).shape[0]
+    cdef np.ndarray unique_elements = np.unique(vector)
+    cdef int num_classes = unique_elements.shape[0]
     cdef int minimum = np.min(vector)
     cdef int maximum = np.max(vector)
 
-    one_hot_vector = np.zeros((vector.shape[0], num_classes), dtype='intc') # Get the matrix size correct  
+    cdef np.ndarray one_hot_vector = np.zeros((vector.shape[0], num_classes), dtype='intc') # Get the matrix size correct  
     cdef int i,j
-    cdef int c = 0 
+    cdef int vector_counter = 0
+    cdef int class_counter = 0 
+
+    # for j in np.nditer(vector):
+    #     for i in range(minimum, maximum + 1):
+    #         if i == j:
+    #             one_hot_vector[c, i - minimum] = 1 
+    #     c += 1
 
     for j in np.nditer(vector):
-        for i in range(minimum, maximum + 1):
+        for i in np.nditer(unique_elements):
             if i == j:
-                one_hot_vector[c, i - minimum] = 1 
-        c += 1
+                one_hot_vector[vector_counter, class_counter] = 1
+                break
+            class_counter += 1
+        class_counter = 0 
+        vector_counter += 1 
         
     return one_hot_vector 
 

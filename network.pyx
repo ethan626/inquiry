@@ -4,7 +4,7 @@ import numpy as np
 cimport numpy as np
 import itertools
 sys.path.append("../")
-from Inquiry.utilities import * 
+from inquiry.utilities import * 
 np.random.seed(1)
 
 class Layer():
@@ -16,8 +16,6 @@ class Layer():
            This layer-> 
          this weight matrix                        Next Layer |
                                                               v
-        
-
         """
 
         cdef double[:,:] weights = 2 * np.random.random((in_size, out_size)) - 1 
@@ -39,16 +37,16 @@ class Layer():
         return self.weights
     
     def activation(self, np.ndarray x):
-        """ Sigmoid activation function """
+        """ Sigmoid or tanh activation function """
         if self.tanh:
             return np.tanh(x)
         else:
             return 1/(1+np.exp(-x))
 
     def derivative(self, np.ndarray x):
-        """ Sigmoid derivative """
+        """ Derivative of either the sigmoid or tanh activation function """
         if self.tanh:
-            return 1-np.tanh(x) ** 2
+            return 1 - np.tanh(x) ** 2
         return x * (1-x)
     
     def predict(self, np.ndarray x):
@@ -166,8 +164,8 @@ class NeuralNetwork():
         """ Neuron outputs for each layer """
         return np.array([layers.neuron_outputs for layer in self.layers])
 
-    def predict(self, x, one_hot=False):
-        """ Prediction of input *x*. *one_hot* returns a one hot encoded prediction  """
+    def predict(self, x):
+        """ Prediction of input *x* """
         for layer in self.layers: 
             x = layer.predict(x)
         return x
